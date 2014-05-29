@@ -8,9 +8,13 @@
 	<h1>TODO List</h1>
 	<hr>
 	<ul>
-		<li>Sample item 1</li>
-		<li>Sample item 2</li>
-		<li>Sample item 3</li>
+	<?php 
+		$sample_array = ['Sample Item 1', 'Sample Item 2', 'Sample Item 3', 'Sample Item 4'];
+		foreach ($sample_array as $item) 
+		{
+			echo "<li>$item</li>";
+		}
+	?>
 	</ul>
 	<form method="POST">
 	<!-- potential options for future implementation -->
