@@ -28,7 +28,28 @@
 		    }
 		        return $target_array;
 		}
-
+		
+		function savetolist($filepathname, $item)
+		{
+		    $write_handle = fopen($filepathname, "a");
+		    if (is_writable($filepathname))
+		    {
+		        fwrite($write_handle, "\n");
+		        fwrite($write_handle, "$item");
+		        fclose($write_handle);
+		        $_POST['item']="";
+		    }
+		    else
+		    {
+		        echo "Invalid filename.  Please check the file name and path and try again. \n";
+		        return false;
+		    }
+		        return true;
+		}
+		if (isset($_POST['item']))
+		{
+			savetolist("/vagrant/sites/todo.dev/public/data/list.txt", $_POST['item']);	
+		}
 		$items = readlist("/vagrant/sites/todo.dev/public/data/list.txt",[]);
 		foreach ($items as $item) 
 		{
@@ -36,23 +57,13 @@
 		}
 	?>
 	</ul>
-	<form method="POST">
-	<!-- potential options for future implementation -->
-	<!-- <p>
-			<button id="remove">Remove Item</button>
-			<button id="open">Open List</button>
-			<button id="save">Save List</button>
-			<button id="sort">Sort List</button>
-			<button id="quit">Quit</button>
-		</p> -->
 	<hr>
-	</form>
 	<h3>Add a Todo Item</h3>
-	<form method="POST" >
+	<form method="POST">
 		<p>
 			<label for="item">New Item:</label>
 			<input id="item" name = "item" type="text" placeholder="Enter todo list item">
-			<button id="add">Add Item</button>
+			<input type="submit" value="Add to List">
 		</p>
 	</form>
 </body>
