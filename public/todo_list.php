@@ -64,7 +64,6 @@
 			$items = read_list(FILENAME);
 			if (isset($_POST['item']) && $_POST['item']!="")
 			{
-				// appenditem(FILENAME,$_POST['item']);
 				if (count($items)!=0) 
 				{
 					$items = read_list(FILENAME);
@@ -74,7 +73,6 @@
 			}
 			if (isset($_GET['item']) && $_GET['item']!="")
 			{
-				$items = read_list(FILENAME);
 				unset($items[$_GET['item']]);
 				update_list(FILENAME, $items);
 			}
@@ -90,9 +88,6 @@
 		</ul>
 	</form>
 	<hr>
-	<!-- Add a link next to each todo item that says "Mark Complete" and have it send a GET request to the page that deletes the entry. 
-	Use query strings to send the proper key back to the server, and update the todo list file to reflect the deletion. -->
-	
 	<h3>Add a Todo Item</h3>
 	<form method="POST" action="todo_list.php">
 		<p>
