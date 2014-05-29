@@ -8,9 +8,29 @@
 	<h1>TODO List</h1>
 	<hr>
 	<ul>
-	<?php 
-		$sample_array = ['Sample Item 1', 'Sample Item 2', 'Sample Item 3', 'Sample Item 4'];
-		foreach ($sample_array as $item) 
+	<?php
+		function readlist($filepathname, $target_array)
+		{
+		    if (is_readable($filepathname))
+		    {
+		        $read_handle = fopen($filepathname, "r");
+		        $listitems = trim(fread($read_handle, filesize($filepathname)));
+		        $listitems_array = explode("\n", $listitems);
+		        foreach ($listitems_array as $item) 
+		        {
+		            array_push($target_array, $item);
+		        }
+		        fclose($read_handle);
+		    }
+		    else
+		    {
+		        echo "File not readable.  Please check the file name and path and try again. \n";
+		    }
+		        return $target_array;
+		}
+
+		$items = readlist("/vagrant/sites/todo.dev/public/data/list.txt",[]);
+		foreach ($items as $item) 
 		{
 			echo "<li>$item</li>";
 		}
