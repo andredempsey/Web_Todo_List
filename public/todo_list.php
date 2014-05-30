@@ -8,7 +8,7 @@
 			        if (filesize($filepathname)>0) 
 			        {
 				        $listitems = trim(fread($read_handle, filesize($filepathname)));
-				        $listitems_array = explode("\n", $listitems);
+				        $listitems_array = explode(PHP_EOL, $listitems);
 				        fclose($read_handle);
 			        }
 			        else
@@ -19,7 +19,7 @@
 			    }
 			    else
 			    {
-			        echo "File not readable.  Please check the file name and path and try again. \n";
+			        echo "File not readable.  Please check the file name and path and try again. ". PHP_EOL;
 			    }
 			        return $listitems_array;
 			}
@@ -36,14 +36,14 @@
 			    $write_handle = fopen($filepathname, "w");
 			    if (is_writable($filepathname))
 			    {
-			        $new_string=trim(implode("\n", $newarray));
+			        $new_string=trim(implode(PHP_EOL, $newarray));
 			        fwrite($write_handle, "$new_string");
 			        fclose($write_handle);
 					$_GET['item']='';
 			    }
 			    else
 			    {
-			        echo "Invalid filename.  Please check the file name and path and try again. \n";
+			        echo "Invalid filename.  Please check the file name and path and try again. ". PHP_EOL;
 			        return false;
 			    }
 			        return true;
