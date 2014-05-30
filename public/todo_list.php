@@ -23,6 +23,14 @@
 			    }
 			        return $listitems_array;
 			}
+			function append_list($existlist, $newlist)
+			{
+				foreach ($newlist as $listitem => $itemvalue) 
+				{
+					array_push($existlist,$itemvalue);
+				}
+				return $existlist;
+			}	
 
 			function show_list($items)
 			{
@@ -76,6 +84,18 @@
 				unset($items[$_GET['item']]);
 				update_list(FILENAME, $items);
 			}
+			if (isset($_GET['uploadlist']) && $_GET['uploadlist']!="")
+			{
+				//retrieve current todo list
+				$items=read_list(FILENAME);
+				//retrieve uploaded file contents
+				$newlist=read_list($_GET['uploadlist']);
+				//append file contents to current todo list
+				$items=append_list($items,$newlist);
+				//update todo list file
+				update_list(FILENAME, $items);
+
+			}
 			if (count($items)==0) 
 			{
 				echo "<p>No items in list</p>";
@@ -94,8 +114,39 @@
 			<label for="item">New Item:</label>
 			<input id="item" name = "item" type="text" placeholder="Enter todo list item">
 			<input type="submit" value="Add to List">
-
 		</p>
 	</form>
+	<?php
+		// Verify there were uploaded files and no errors
+		if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) {
+		    // Set the destination directory for uploads
+		    $upload_dir = '/vagrant/sites/todo.dev/public/uploads/';
+		    // Grab the filename from the uploaded file by using basename
+		    $filename = basename($_FILES['file1']['name']);
+		    // Create the saved filename using the file's original name and our upload directory
+		    $saved_filename = $upload_dir . $filename;
+		    // Move the file from the temp location to our uploads directory
+		    move_uploaded_file($_FILES['file1']['tmp_name'], $saved_filename);
+		}
+		// Check if we saved a file
+		if (isset($saved_filename)) {
+		    // If we did, show a link to the uploaded file
+		    echo "<p>You can add todo's from <strong>" . $_FILES['file1']['name'] . "</strong> to your todo list by clicking 
+			<p><a href='todo_list.php?uploadlist={$saved_filename}'>here</a>.</p>";
+		}
+
+
+	?>
+	<h3>Upload File</h3>
+	<form method="POST" enctype="multipart/form-data" action="/todo_list.php">
+	    <p>
+	        <label for="file1">File to upload: </label>
+	        <input type="file" id="file1" name="file1">
+	    </p>
+	    <p>
+	        <input type="submit" value="Upload">
+	    </p>
+	</form>
+
 </body>
 </html>
