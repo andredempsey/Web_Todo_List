@@ -60,7 +60,7 @@
 		<h1>TODO List</h1>
 		<hr>
 		<ul>
-			<?php
+		<?php
 			$items = read_list(FILENAME);
 			if (isset($_POST['item']) && $_POST['item']!="")
 			{
