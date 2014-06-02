@@ -1,62 +1,98 @@
-		<?php
-			define('FILENAME','/vagrant/sites/todo.dev/public/data/list.txt');
-			function read_list($filepathname)
-			{
-			    if (is_readable($filepathname))
-			    {
-			        $read_handle = fopen($filepathname, "r");
-			        if (filesize($filepathname)>0) 
-			        {
-				        $listitems = trim(fread($read_handle, filesize($filepathname)));
-				        $listitems_array = explode(PHP_EOL, $listitems);
-				        fclose($read_handle);
-			        }
-			        else
-			        {
-				        fclose($read_handle);
-			        	$listitems_array=array();
-			        }
-			    }
-			    else
-			    {
-			        echo "File not readable.  Please check the file name and path and try again. ". PHP_EOL;
-			    }
-			        return $listitems_array;
-			}
-			function append_list($existlist, $newlist)
-			{
-				foreach ($newlist as $listitem => $itemvalue) 
-				{
-					array_push($existlist,$itemvalue);
-				}
-				return $existlist;
-			}	
+<?php
+	define('FILENAME','/vagrant/sites/todo.dev/public/data/list.txt');
+	$errorMsg = '';
+	function readList($filePathName)
+	{
+	    if (is_readable($filePathName))
+	    {
+	        $readHandle = fopen($filePathName, "r");
+	        if (filesize($filePathName)>0) 
+	        {
+		        $listItems = trim(fread($readHandle, filesize($filePathName)));
+		        $listItemsArray = explode(PHP_EOL, $listItems);
+		        fclose($readHandle);
+	        }
+	        else
+	        {
+		        fclose($readHandle);
+	        	$listItemsArray=array();
+	        }
+	    }
+	    else
+	    {
+	        $errorMsg = "File not readable.  Please check the file name and path and try again. ". PHP_EOL;
+	    }
+	        return $listItemsArray;
+	}
+	function appendList($existList, $newList)
+	{
+		foreach ($newList as $listItem => $itemValue) 
+		{
+			array_push($existList,$itemValue);
+		}
+		return $existList;
+	}	
 
-			function show_list($items)
-			{
-				foreach ($items as $key => $item) 
-				{
-					echo "<li><button id='marked' name = 'item' value = $key>Mark Complete</button>$item</li>";
-				}
-			}
-			function update_list($filepathname, $newarray)
-			{
-			    $write_handle = fopen($filepathname, "w");
-			    if (is_writable($filepathname))
-			    {
-			        $new_string=trim(implode(PHP_EOL, $newarray));
-			        fwrite($write_handle, "$new_string");
-			        fclose($write_handle);
-					$_GET['item']='';
-			    }
-			    else
-			    {
-			        echo "Invalid filename.  Please check the file name and path and try again. ". PHP_EOL;
-			        return false;
-			    }
-			        return true;
-			}
-			?>
+	function updateList($filePathName, $newArray)
+	{
+	    $write_handle = fopen($filePathName, "w");
+	    if (is_writable($filePathName))
+	    {
+	        $newString=trim(implode(PHP_EOL, $newArray));
+	        fwrite($write_handle, "$newString");
+	        fclose($write_handle);
+	    }
+	    else
+	    {
+	        $errorMsg = "Invalid filename.  Please check the file name and path and try again. <br>". PHP_EOL;
+	        return false;
+	    }
+	        return true;
+	}
+	$items = readList(FILENAME);
+	if (isset($_POST['item']) && $_POST['item']!="")
+	{
+		if (count($items)!=0) 
+		{
+			$items = readList(FILENAME);
+		}
+		array_push($items,$_POST['item']);
+		updateList(FILENAME, $items);
+	}
+	if (isset($_GET['item']) && $_GET['item']!="")
+	{
+		unset($items[$_GET['item']]);
+		updateList(FILENAME, $items);
+	}
+	// Verify there were uploaded files and no errors
+	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
+	{
+	    // Set the destination directory for uploads
+	    $uploadDir = '/vagrant/sites/todo.dev/public/uploads/';
+	    // Grab the filename from the uploaded file by using basename
+	    $filename = basename($_FILES['file1']['name']);
+	    // Create the saved filename using the file's original name and our upload directory
+	    $savedFilename = $uploadDir . $filename;
+	    // Move the file from the temp location to our uploads directory
+	    move_uploaded_file($_FILES['file1']['tmp_name'], $savedFilename);
+		// Check if we saved a file
+		if ($_FILES['file1']['type']!='text/plain') //incorrect file type
+		{
+			$errorMsg = "<p><strong>The file type cannot be processed.  Please try again with a text file.</strong></p>";
+		} 
+		else
+		{
+			//retrieve current todo list
+			$items=readList(FILENAME);
+			//retrieve uploaded file contents
+			$newList=readList($savedFilename);
+			//append file contents to current todo list
+			$items=appendList($items,$newList);
+			//update todo list file
+			updateList(FILENAME, $items);	
+		}
+	}
+?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -68,42 +104,20 @@
 		<h1>TODO List</h1>
 		<hr>
 		<ul>
-		<?php
-			$items = read_list(FILENAME);
-			if (isset($_POST['item']) && $_POST['item']!="")
-			{
-				if (count($items)!=0) 
+			<?php
+				if (count($items)==0) 
 				{
-					$items = read_list(FILENAME);
+					echo "<p>No items in list</p>";
 				}
-				array_push($items,$_POST['item']);
-				update_list(FILENAME, $items);
-			}
-			if (isset($_GET['item']) && $_GET['item']!="")
-			{
-				unset($items[$_GET['item']]);
-				update_list(FILENAME, $items);
-			}
-			if (isset($_GET['uploadlist']) && $_GET['uploadlist']!="")
-			{
-				//retrieve current todo list
-				$items=read_list(FILENAME);
-				//retrieve uploaded file contents
-				$newlist=read_list($_GET['uploadlist']);
-				//append file contents to current todo list
-				$items=append_list($items,$newlist);
-				//update todo list file
-				update_list(FILENAME, $items);	
-			}
-			if (count($items)==0) 
-			{
-				echo "<p>No items in list</p>";
-			}
-			else
-			{
-				show_list($items);
-			}	
-		?>
+				else
+				{
+		
+					foreach ($items as $key => $item) 
+						{
+							echo "<li><button id='marked' name = 'item' value = $key>Mark Complete</button>$item</li>";
+						}
+				}	
+			?>
 		</ul>
 	</form>
 	<hr>
@@ -125,31 +139,6 @@
 	        <input type="submit" value="Upload">
 	    </p>
 	</form>
-	<?php
-		// Verify there were uploaded files and no errors
-		if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
-		{
-		    // Set the destination directory for uploads
-		    $upload_dir = '/vagrant/sites/todo.dev/public/uploads/';
-		    // Grab the filename from the uploaded file by using basename
-		    $filename = basename($_FILES['file1']['name']);
-		    // Create the saved filename using the file's original name and our upload directory
-		    $saved_filename = $upload_dir . $filename;
-		    // Move the file from the temp location to our uploads directory
-		    move_uploaded_file($_FILES['file1']['tmp_name'], $saved_filename);
-			// Check if we saved a file
-			if ($_FILES['file1']['type']!='text/plain') //incorrect file type
-			{
-				echo "<p><strong>The file type cannot be processed.  Please try again with a text file.</strong></p>";
-			}
-			else
-			{	
-			    // If we did, show a link to the uploaded file
-				echo "<p><a href='todo_list.php?uploadlist={$saved_filename}'><img HEIGHT='40' WIDTH='40' src='img/clickhere.jpeg' alt='click here'></a>
-			    to add contents from <strong>" . $_FILES['file1']['name'] . "</strong> to your todo list<b></p>"; 
-			}
-		}
-	?>
-<img src="" alt="">
+	<?php echo (is_null($errorMsg))?"":$errorMsg;?>
 </body>
 </html>
