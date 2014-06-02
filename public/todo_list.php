@@ -63,6 +63,10 @@
 	{
 		unset($items[$_GET['item']]);
 		updateList(FILENAME, $items);
+		header('Location: /todo_list.php');
+		exit;
+
+
 	}
 	// Verify there were uploaded files and no errors
 	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
