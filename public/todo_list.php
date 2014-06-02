@@ -28,7 +28,7 @@
 	{
 		foreach ($newList as $listItem => $itemValue) 
 		{
-			array_push($existList,$itemValue);
+			array_push($existList,htmlspecialchars(strip_tags($itemValue)));
 		}
 		return $existList;
 	}	
@@ -56,7 +56,7 @@
 		{
 			$items = readList(FILENAME);
 		}
-		array_push($items,$_POST['item']);
+		array_push($items,htmlspecialchars(strip_tags($_POST['item'])));
 		updateList(FILENAME, $items);
 	}
 	if (isset($_GET['item']) && $_GET['item']!="")
