@@ -108,7 +108,7 @@
 				<?= "No items in list"; ?>
 				<? else: ?>
 					<? foreach ($items as $key => $item): ?>
-						<?="<li><button id='marked' name = 'item' value = $key>Mark Complete</button>$item</li>"; ?> 
+						<li><button id='marked' name = 'item' value = <?=$key?>>Mark Complete</button><?= htmlspecialchars(strip_tags($item))?></li> 
 					<? endforeach; ?>
 			<? endif; ?>
 		</ul>
