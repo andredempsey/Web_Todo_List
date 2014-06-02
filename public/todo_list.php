@@ -1,4 +1,4 @@
-<?php
+<?
 	define('FILENAME','/vagrant/sites/todo.dev/public/data/list.txt');
 	$errorMsg = '';
 	function readList($filePathName)
@@ -104,20 +104,13 @@
 		<h1>TODO List</h1>
 		<hr>
 		<ul>
-			<?php
-				if (count($items)==0) 
-				{
-					echo "<p>No items in list</p>";
-				}
-				else
-				{
-		
-					foreach ($items as $key => $item) 
-						{
-							echo "<li><button id='marked' name = 'item' value = $key>Mark Complete</button>$item</li>";
-						}
-				}	
-			?>
+			<? if (count($items)==0): ?>
+				<?= "No items in list"; ?>
+				<? else: ?>
+					<? foreach ($items as $key => $item): ?>
+						<?="<li><button id='marked' name = 'item' value = $key>Mark Complete</button>$item</li>"; ?> 
+					<? endforeach; ?>
+			<? endif; ?>
 		</ul>
 	</form>
 	<hr>
@@ -139,6 +132,6 @@
 	        <input type="submit" value="Upload">
 	    </p>
 	</form>
-	<?php echo (is_null($errorMsg))?"":$errorMsg;?>
+	<?= (is_null($errorMsg))?"":$errorMsg; ?>
 </body>
 </html>
