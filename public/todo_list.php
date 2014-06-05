@@ -102,17 +102,20 @@
 <head>
 	<meta charset="UTF-8">
 	<title>TODO List</title>
+	<link rel="stylesheet" href="/css/stylesheet.css">
 </head>
+<header>
+	<h1>TODO List</h1>
+</header>
 <body>
 	<form method="GET" action="todo_list.php">
-		<h1>TODO List</h1>
 		<hr>
 		<ul>
 			<? if (count($items)==0): ?>
 				<?= "No items in list"; ?>
 				<? else: ?>
 					<? foreach ($items as $key => $item): ?>
-						<li><button id='marked' name = 'item' value = <?=$key?>>Mark Complete</button><?= htmlspecialchars(strip_tags($item))?></li> 
+						<li><button id='marked' name = 'item' value = <?=$key?>>X</button><?= htmlspecialchars(strip_tags($item))?></li> 
 					<? endforeach; ?>
 			<? endif; ?>
 		</ul>
