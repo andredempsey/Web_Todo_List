@@ -1,72 +1,36 @@
 <?
+	require_once('classes/filestore.php');
 	define('FILENAME','/vagrant/sites/todo.dev/public/data/list.txt');
-	$errorMsg = '';
-	function readList($filePathName)
-	{
-	    if (is_readable($filePathName))
-	    {
-	        $readHandle = fopen($filePathName, "r");
-	        if (filesize($filePathName)>0) 
-	        {
-		        $listItems = trim(fread($readHandle, filesize($filePathName)));
-		        $listItemsArray = explode(PHP_EOL, $listItems);
-		        fclose($readHandle);
-	        }
-	        else
-	        {
-		        fclose($readHandle);
-	        	$listItemsArray=array();
-	        }
-	    }
-	    else
-	    {
-	        $errorMsg = "File not readable.  Please check the file name and path and try again. ". PHP_EOL;
-	    }
-	        return $listItemsArray;
-	}
-	function appendList($existList, $newList)
-	{
-		foreach ($newList as $listItem => $itemValue) 
-		{
-			array_push($existList,htmlspecialchars(strip_tags($itemValue)));
-		}
-		return $existList;
-	}	
 
-	function updateList($filePathName, $newArray)
-	{
-	    $write_handle = fopen($filePathName, "w");
-	    if (is_writable($filePathName))
-	    {
-	        $newString=trim(implode(PHP_EOL, $newArray));
-	        fwrite($write_handle, "$newString");
-	        fclose($write_handle);
-	    }
-	    else
-	    {
-	        $errorMsg = "Invalid filename.  Please check the file name and path and try again. <br>". PHP_EOL;
-	        return false;
-	    }
-	        return true;
-	}
-	$items = readList(FILENAME);
+	$errorMsg = '';
+
+	function appendList($existList, $newList)
+    {
+        foreach ($newList as $listItem => $itemValue) 
+        {
+            array_push($existList,htmlspecialchars(strip_tags($itemValue)));
+        }
+        return $existList;
+    }   
+
+    $fs = new Filestore(FILENAME);
+
+	$items = $fs->read_lines();
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
 		if (count($items)!=0) 
 		{
-			$items = readList(FILENAME);
+			$items = $fs->read_lines();
 		}
 		array_push($items,htmlspecialchars(strip_tags($_POST['item'])));
-		updateList(FILENAME, $items);
+		$fs->write_lines($items);
 	}
 	if (isset($_GET['item']) && $_GET['item']!="")
 	{
 		unset($items[$_GET['item']]);
-		updateList(FILENAME, $items);
+		$fs->write_lines($items);
 		header('Location: /todo_list.php');
 		exit;
-
-
 	}
 	// Verify there were uploaded files and no errors
 	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
@@ -87,13 +51,14 @@
 		else
 		{
 			//retrieve current todo list
-			$items=readList(FILENAME);
+			$items=$fs->read_lines();
 			//retrieve uploaded file contents
-			$newList=readList($savedFilename);
+			$uf = new Filestore($savedFilename);
+			$newList=$uf->read_lines();
 			//append file contents to current todo list
 			$items=appendList($items,$newList);
 			//update todo list file
-			updateList(FILENAME, $items);	
+			$fs->write_lines($items);	
 		}
 	}
 ?>
@@ -107,6 +72,7 @@
 <header>
 	<h1>TODO List</h1>
 </header>
+<div>
 <body>
 	<form method="GET" action="todo_list.php">
 		<hr>
@@ -141,4 +107,6 @@
 	</form>
 	<?= (is_null($errorMsg))?"":$errorMsg; ?>
 </body>
+<footer>&copy; Andre</footer>
+</div>
 </html>
