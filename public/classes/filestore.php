@@ -3,17 +3,43 @@
 class Filestore {
 
     public $filename = '';
+    private $is_csv = false;
 
     function __construct($filename = '') 
     {
         // Sets $this->filename
+        $this->is_csv = (substr($filename, -3) == 'csv');
         $this->filename = $filename;
+    }
+
+    public function read()
+    {
+        if ($this->is_csv)
+        {
+            return $this->read_csv();
+        }
+        else
+        {
+            return $this->read_lines();
+        }
+    }
+
+    public function write($array)
+    {
+        if ($this->is_csv) 
+        {
+            $this->write_csv($array);
+        }
+        else 
+        {
+            $this->write_lines($array);
+        }
     }
 
     /**
      * Returns array of lines in $this->filename
      */
-    function read_lines()
+    private function read_lines()
     {
         if (is_readable($this->filename))
         {
@@ -40,7 +66,7 @@ class Filestore {
     /**
      * Writes each element in $array to a new line in $this->filename
      */
-    function write_lines($array)
+    private function write_lines($array)
     {
         $write_handle = fopen($this->filename, "w");
         if (is_writable($this->filename))
@@ -52,15 +78,13 @@ class Filestore {
         else
         {
             $errorMsg = "Invalid filename.  Please check the file name and path and try again. <br>". PHP_EOL;
-            return false;
         }
-            return true;
     }
 
     /**
      * Reads contents of csv $this->filename, returns an array
      */
-    function read_csv()
+    private function read_csv()
     {
         $addressBook=[];
         // Code to read file $this->filename
@@ -80,27 +104,18 @@ class Filestore {
     /**
      * Writes contents of $array to csv $this->filename
      */
-    function write_csv($array)
+    private function write_csv($array)
     {
         if (is_writable($this->filename)) 
         {   
             $handle = fopen($this->filename, 'w');
-            foreach ($addressBook as $key=>$entry) 
+            foreach ($array as $key=>$entry) 
             {
                 fputcsv($handle, $entry);
             }
             fclose($handle);
         }
-        return $addressBook;
+        return $array;
     }
 
 }
-
-
-
-
-
-
-
-
-

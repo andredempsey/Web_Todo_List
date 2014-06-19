@@ -15,20 +15,20 @@
 
     $fs = new Filestore(FILENAME);
 
-	$items = $fs->read_lines();
+	$items = $fs->read();
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
 		if (count($items)!=0) 
 		{
-			$items = $fs->read_lines();
+			$items = $fs->read();
 		}
 		array_push($items,htmlspecialchars(strip_tags($_POST['item'])));
-		$fs->write_lines($items);
+		$fs->write($items);
 	}
 	if (isset($_GET['item']) && $_GET['item']!="")
 	{
 		unset($items[$_GET['item']]);
-		$fs->write_lines($items);
+		$fs->write($items);
 		header('Location: /todo_list.php');
 		exit;
 	}
@@ -51,31 +51,58 @@
 		else
 		{
 			//retrieve current todo list
-			$items=$fs->read_lines();
+			$items=$fs->read();
 			//retrieve uploaded file contents
 			$uf = new Filestore($savedFilename);
-			$newList=$uf->read_lines();
+			$newList=$uf->read();
 			//append file contents to current todo list
 			$items=appendList($items,$newList);
 			//update todo list file
-			$fs->write_lines($items);	
+			$fs->write($items);	
 		}
 	}
 ?>
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<title>TODO List</title>
-	<link rel="stylesheet" href="/css/stylesheet.css">
-</head>
-<header>
-	<h1>TODO List</h1>
-</header>
-<div>
-<body>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<meta charset="utf-8">
+		<title>TODO List</title>
+		<meta name="generator" content="Bootply" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+		<link href="css/bootstrap.min.css" rel="stylesheet">
+		<!--[if lt IE 9]>
+			<script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
+		<![endif]-->
+		<link href="css/stylesheet.css" rel="stylesheet">
+	</head>
+	<body>
+<div class="navbar navbar-default navbar-static-top">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">To Do List</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav">
+        <li class="active"><a href="#">Home</a></li>
+        <li><a href="#fileUpload">Upload File</a></li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="#about">About</a></li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div>
+</div>
+
+<div class="container">
+  
+</div><!-- /.container -->
 	<form method="GET" action="todo_list.php">
-		<hr>
 		<ul>
 			<? if (count($items)==0): ?>
 				<?= "No items in list"; ?>
@@ -95,7 +122,7 @@
 			<input type="submit" value="Add to List">
 		</p>
 	</form>
-	<h3>Upload File</h3>
+	<h3 id="fileUpload">Upload File</h3>
 	<form method="POST" enctype="multipart/form-data" action="/todo_list.php">
 	    <p>
 	        <label for="file1">File to upload: </label>
@@ -106,7 +133,13 @@
 	    </p>
 	</form>
 	<?= (is_null($errorMsg))?"":$errorMsg; ?>
-</body>
-<footer>&copy; Andre</footer>
-</div>
+
+	<!-- script references -->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+		<script src="js/scripts.js"></script>
+	</body>
 </html>
+
+
+
