@@ -62,7 +62,19 @@ class Filestore {
      */
     function read_csv()
     {
-
+        $addressBook=[];
+        // Code to read file $this->filename
+        $handle = fopen($this->filename, 'r');
+        while(!feof($handle)) 
+        {
+            $row=fgetcsv($handle);      
+            if (is_array($row)) 
+            {
+                $addressBook[] = $row;
+            }
+        }
+        fclose($handle);
+        return $addressBook;
     }
 
     /**
@@ -70,10 +82,20 @@ class Filestore {
      */
     function write_csv($array)
     {
-
+        if (is_writable($this->filename)) 
+        {   
+            $handle = fopen($this->filename, 'w');
+            foreach ($addressBook as $key=>$entry) 
+            {
+                fputcsv($handle, $entry);
+            }
+            fclose($handle);
+        }
+        return $addressBook;
     }
 
 }
+
 
 
 
