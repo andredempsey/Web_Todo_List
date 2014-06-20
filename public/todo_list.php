@@ -3,7 +3,8 @@
 	define('FILENAME','/vagrant/sites/todo.dev/public/data/list.txt');
 
 	$errorMsg = '';
-
+	class InvalidInputException extends Exception {}
+	
 	function appendList($existList, $newList)
     {
         foreach ($newList as $listItem => $itemValue) 
@@ -18,12 +19,12 @@
     	if (strlen(trim($todoItem)) == '')
     	{
 
-    		throw new Exception('To Do items cannot be null.');
+    		throw new InvalidInputException('To Do items cannot be null.');
     		
     	}
     	elseif (strlen($todoItem) > 239) 
     	{
-    		throw new Exception('Length of To Do items cannot exceed 239 characters.');
+    		throw new InvalidInputException('Length of To Do items cannot exceed 239 characters.');
     	}
     	else
     	{
@@ -47,7 +48,7 @@
 			array_push($items,htmlspecialchars(strip_tags(inputValidation($_POST['item']))));
 			
 		} 
-		catch (Exception $e) 
+		catch (InvalidInputException $e) 
 		{
 			$errorMsg=$e->getMessage();
 		}
