@@ -41,8 +41,16 @@
 		{
 			$items = $fs->read();
 		}
-		//add todo item to list
-		array_push($items,htmlspecialchars(strip_tags(inputValidation($_POST['item']))));
+		try 
+		{
+			//add todo item to list
+			array_push($items,htmlspecialchars(strip_tags(inputValidation($_POST['item']))));
+			
+		} 
+		catch (Exception $e) 
+		{
+			$errorMsg=$e->getMessage();
+		}
 		$fs->write($items);
 	}
 	if (isset($_GET['item']) && $_GET['item']!="")
