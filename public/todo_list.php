@@ -12,21 +12,42 @@
         }
         return $existList;
     }   
+    
+    function inputValidation($todoItem)
+    {
+    	if (strlen(trim($todoItem)) == '')
+    	{
+
+    		throw new Exception('To Do items cannot be null.');
+    		
+    	}
+    	elseif (strlen($todoItem) > 239) 
+    	{
+    		throw new Exception('Length of To Do items cannot exceed 239 characters.');
+    	}
+    	else
+    	{
+    		return $todoItem;
+    	}
+    }
 
     $fs = new Filestore(FILENAME);
 
 	$items = $fs->read();
+	//check if a value has been POSTED and it is not null
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
 		if (count($items)!=0) 
 		{
 			$items = $fs->read();
 		}
-		array_push($items,htmlspecialchars(strip_tags($_POST['item'])));
+		//add todo item to list
+		array_push($items,htmlspecialchars(strip_tags(inputValidation($_POST['item']))));
 		$fs->write($items);
 	}
 	if (isset($_GET['item']) && $_GET['item']!="")
 	{
+		//delete respective todo item
 		unset($items[$_GET['item']]);
 		$fs->write($items);
 		header('Location: /todo_list.php');
