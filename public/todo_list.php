@@ -1,19 +1,19 @@
 <?
-	require_once('classes/filestore.php');
-	define('FILENAME','/vagrant/sites/todo.dev/public/data/list.txt');
+	// Get new instance of PDO object
+	$dbc = new PDO('mysql:host=127.0.0.1;dbname=todo_list', 'andre', 'password');
 
-	$errorMsg = '';
+	// Tell PDO to throw exceptions on error
+	$dbc->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+	// echo $dbc->getAttribute(PDO::ATTR_CONNECTION_STATUS) . "\n";
+	//initialize/declare variables
+	$errorMsg='';
+	$numRecords = 10;
+	$offsetValue = 0;
+	$pageNumber= 1;
 	class InvalidInputException extends Exception {}
-	
-	function appendList($existList, $newList)
-    {
-        foreach ($newList as $listItem => $itemValue) 
-        {
-            array_push($existList,htmlspecialchars(strip_tags($itemValue)));
-        }
-        return $existList;
-    }   
-    
+
+	//validate inputs to check for invalid spaces or excessive length
     function inputValidation($todoItem)
     {
     	if (strlen(trim($todoItem)) == '')
@@ -28,69 +28,77 @@
     	}
     	else
     	{
-    		return $todoItem;
+    		return trim($todoItem);
     	}
     }
 
-    $fs = new Filestore(FILENAME);
-
-	$items = $fs->read();
-	//check if a value has been POSTED and it is not null
+	//check if a value has been POSTED and it is not null; add item to table
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
-		if (count($items)!=0) 
-		{
-			$items = $fs->read();
-		}
-		try 
-		{
-			//add todo item to list
-			array_push($items,htmlspecialchars(strip_tags(inputValidation($_POST['item']))));
-			
-		} 
-		catch (InvalidInputException $e) 
-		{
-			$errorMsg=$e->getMessage();
-		}
-		$fs->write($items);
+			try {
+				$stmt = $dbc->prepare('INSERT INTO todos (item) VALUES (:item)');
+			    $stmt->bindValue(':item', $_POST['item'], PDO::PARAM_STR);
+			    $stmt->execute();
+			 	$errorMessage = "Inserted ID: " . $dbc->lastInsertId();
+				$_POST=[];	
+			} 
+			catch (Exception $e) 
+			{
+				$errorMessage=$e->getMessage();
+			}
 	}
-	if (isset($_GET['item']) && $_GET['item']!="")
+
+	//delete item from list and database
+	if (isset($_GET['id']) && $_GET['id']!="")
 	{
 		//delete respective todo item
-		unset($items[$_GET['item']]);
-		$fs->write($items);
-		header('Location: /todo_list.php');
-		exit;
+		$query='DELETE FROM todos WHERE id=:id';
+		$stmt = $dbc->prepare($query);
+		$stmt->bindValue(':id',  $_GET['id'],  PDO::PARAM_INT);
+		$stmt->execute();
+		header("Location: todo_list.php");
+		exit();
 	}
-	// Verify there were uploaded files and no errors
-	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
+
+	//determine total pages for entire data set
+	$totalPages = ($dbc->query('SELECT * FROM todos')->rowCount()/$numRecords);
+
+	//if page was changed, update data set using prepare statements and SQL SELECT query
+	if (isset($_GET['Page']))
 	{
-	    // Set the destination directory for uploads
-	    $uploadDir = '/vagrant/sites/todo.dev/public/uploads/';
-	    // Grab the filename from the uploaded file by using basename
-	    $filename = basename($_FILES['file1']['name']);
-	    // Create the saved filename using the file's original name and our upload directory
-	    $savedFilename = $uploadDir . $filename;
-	    // Move the file from the temp location to our uploads directory
-	    move_uploaded_file($_FILES['file1']['tmp_name'], $savedFilename);
-		// Check if we saved a file
-		if ($_FILES['file1']['type']!='text/plain') //incorrect file type
+		if ($_GET['Page'] > ceil($totalPages))
 		{
-			$errorMsg = "<p><strong>The file type cannot be processed.  Please try again with a text file.</strong></p>";
+			$pageNumber = ceil($totalPages);
+			header("Location: todo_list.php?Page=$pageNumber");
+			exit();
+			$offsetValue = $numRecords * $pageNumber - $numRecords;	
+		} 
+		elseif ($_GET['Page'] >= 1)
+		{
+			$pageNumber = $_GET['Page'];
+			$offsetValue = $numRecords * $pageNumber - $numRecords;
 		} 
 		else
 		{
-			//retrieve current todo list
-			$items=$fs->read();
-			//retrieve uploaded file contents
-			$uf = new Filestore($savedFilename);
-			$newList=$uf->read();
-			//append file contents to current todo list
-			$items=appendList($items,$newList);
-			//update todo list file
-			$fs->write($items);	
+			$pageNumber = 1;
+			header("Location: todo_list.php?Page=$pageNumber");
+			exit();
+			$offsetValue = $numRecords * $pageNumber - $numRecords;	
 		}
+
 	}
+
+	//load list of todos from database
+	$query = "SELECT * FROM todos LIMIT :numRecs OFFSET :offsetVal";
+	$stmt = $dbc->prepare($query);
+	$stmt->bindValue(':numRecs', $numRecords, PDO::PARAM_INT);
+	$stmt->bindValue(':offsetVal', $offsetValue, PDO::PARAM_INT);
+	$stmt->execute();
+	$todoItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+	//determine count of records returned
+	$results = $stmt->rowCount();
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -107,64 +115,70 @@
 		<link href="css/stylesheet.css" rel="stylesheet">
 	</head>
 	<body>
-<div class="navbar navbar-default navbar-static-top">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="#">To Do List</a>
-    </div>
-    <div class="collapse navbar-collapse">
-      <ul class="nav navbar-nav">
-        <li class="active"><a href="#">Home</a></li>
-        <li><a href="#fileUpload">Upload File</a></li>
-      </ul>
-      <ul class="nav navbar-nav navbar-right">
-        <li><a href="#about">About</a></li>
-      </ul>
-    </div><!--/.nav-collapse -->
-  </div>
-</div>
+		<div class="navbar navbar-default navbar-static-top">
+		  <div class="container">
+		    <div class="navbar-header">
+		      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+		        <span class="icon-bar"></span>
+		        <span class="icon-bar"></span>
+		        <span class="icon-bar"></span>
+		      </button>
+		      <a class="navbar-brand" href="#">To Do List</a>
+		    </div>
+		    <div class="collapse navbar-collapse">
+		      <ul class="nav navbar-nav">
+		        <li class="active"><a href="#">Home</a></li>
+		        <li><a href="#fileUpload">Upload File</a></li>
+		      </ul>
+		      <ul class="nav navbar-nav navbar-right">
+		        <li><a href="#about">About</a></li>
+		      </ul>
+		    </div><!--/.nav-collapse -->
+		  </div>
+		</div>
 
-<div class="container">
-  
-</div><!-- /.container -->
-	<form method="GET" action="todo_list.php">
-		<ul>
-			<? if (count($items)==0): ?>
-				<?= "No items in list"; ?>
-				<? else: ?>
-					<? foreach ($items as $key => $item): ?>
-						<li><button id='marked' name = 'item' value = <?=$key?>>X</button><?= htmlspecialchars(strip_tags($item))?></li> 
-					<? endforeach; ?>
-			<? endif; ?>
-		</ul>
-	</form>
-	<hr>
-	<h3>Add a Todo Item</h3>
-	<form method="POST" action="todo_list.php">
-		<p>
-			<label for="item">New Item:</label>
-			<input id="item" name = "item" type="text" placeholder="Enter todo list item">
-			<input type="submit" value="Add to List">
-		</p>
-	</form>
-	<h3 id="fileUpload">Upload File</h3>
-	<form method="POST" enctype="multipart/form-data" action="/todo_list.php">
-	    <p>
-	        <label for="file1">File to upload: </label>
-	        <input type="file" id="file1" name="file1">
-	    </p>
-	    <p>
-	        <input type="submit" value="Upload">
-	    </p>
-	</form>
-	<?= (is_null($errorMsg))?"":$errorMsg; ?>
+		<div class="container">
+			<h3>Add a Todo Item</h3>
+			<form method="POST" action="todo_list.php">
+				<p>
+					<label for="item">New Item:</label>
+					<input id="item" name = "item" type="text" placeholder="Enter todo list item">
+					<input type="submit" value="Add to List">
+				</p>
+			</form>
+		</div>
 
-	<!-- script references -->
+		<form method="GET" action="/todo_list.php">
+		<? if ($results!=0): ?>
+			<?foreach ($todoItems as $key =>$todo) :?>
+				<ul>
+					<?foreach ($todo as $key =>$item) :?>
+						<li><button id='marked' name = 'id' value = <?=$todo['id']?>>X</button><?= htmlspecialchars(strip_tags($todo['item']))?></li> 
+					<!-- <?endforeach;?> -->
+				</ul>
+			<?endforeach;?>
+		</form>
+		<? endif; ?> 
+
+		</table>
+		<p style="text-align: center">Page <?=$pageNumber?> of <?=ceil($totalPages)?> pages.</p>
+		<p style="text-align: center">You are viewing <?=$results?> of <?=$totalPages*$numRecords?> total results.</p>
+		<?= (is_null($errorMsg))?"":$errorMsg; ?>
+
+		<form method="GET" action="/todo_list.php">
+			<div style ="text-align: center"><ul class="pagination">
+			  <li><a href="todo_list.php?Page=<?=$pageNumber-1?>">&laquo;</a></li>
+			  	<?for ($i = 1; $i <= ceil($totalPages); $i++) : ?>
+			  	<li><a href="todo_list.php?Page=<?=$i?>"><?=$i?></a></li>
+				<?endfor;?>
+			  <li><a href="todo_list.php?Page=<?=$pageNumber+1?>">&raquo;</a></li>
+			</ul>
+			</div>
+		</form>
+
+		<hr>
+
+		<!-- script references -->
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.2/jquery.min.js"></script>
 		<script src="js/bootstrap.min.js"></script>
 		<script src="js/scripts.js"></script>
