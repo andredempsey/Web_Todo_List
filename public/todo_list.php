@@ -5,16 +5,19 @@
 	$numRecords = 10;
 	$offsetValue = 0;
 	$pageNumber= 1;
+	$filename = 'todo_list';
+
 	class InvalidInputException extends Exception {}
 
-	//establish DB connection
-	// Get new instance of PDO object
-	$dbc = new PDO('mysql:host=127.0.0.1;dbname=todo_list', 'andre', 'password');
+    //establish DB connection
+    // Get new instance of PDO object
+    $dbc = new PDO('mysql:host=127.0.0.1;dbname=' . $filename, 'andre', 'password');
 
-	// Tell PDO to throw exceptions on error
-	$dbc->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-	// echo $dbc->getAttribute(PDO::ATTR_CONNECTION_STATUS) . "\n";
+    // Tell PDO to throw exceptions on error
+    $dbc->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // echo $dbc->getAttribute(PDO::ATTR_CONNECTION_STATUS) . "\n";
 	//validate inputs to check for invalid spaces or excessive length
+
     function inputValidation($todoItem)
     {
     	if (strlen(trim($todoItem)) == '')
@@ -32,31 +35,31 @@
     		return trim($todoItem);
     	}
     }
-    //adds new item to the database
-    function addItem(&$errorMessage, $dbc, $userInput)
+  	function addItem(&$errorMessage, $dbc, $userInput)
     {
-		try 
-		{
-			$stmt = $dbc->prepare('INSERT INTO todos (item) VALUES (:item)');
-		    $stmt->bindValue(':item', $userInput, PDO::PARAM_STR);
-		    $stmt->execute();
-		 	$errorMessage = "Inserted ID: " . $dbc->lastInsertId();
-			$_POST=[];	
-		} 
-		catch (Exception $e) 
-		{
-			$errorMessage=$e->getMessage();
-		}
-		echo "item add";
+        try 
+        {
+            $stmt = $dbc->prepare('INSERT INTO todos (item) VALUES (:item)');
+            $stmt->bindValue(':item', $userInput, PDO::PARAM_STR);
+            $stmt->execute();
+            $errorMessage = "Inserted ID: " . $dbc->lastInsertId();
+            $_POST=[];  
+        } 
+        catch (Exception $e) 
+        {
+            $errorMessage=$e->getMessage();
+        }
+        echo "item add";
     }
     //delete item from database
     function deleteItem(&$errorMessage, $dbc, $userInput)
     {
-    	$query='DELETE FROM todos WHERE id=:id';
-		$stmt = $dbc->prepare($query);
-		$stmt->bindValue(':id', $userInput, PDO::PARAM_INT);
-		$stmt->execute();
+        $query='DELETE FROM todos WHERE id=:id';
+        $stmt = $dbc->prepare($query);
+        $stmt->bindValue(':id', $userInput, PDO::PARAM_INT);
+        $stmt->execute();
     }
+    
 	//check if a value has been POSTED and it is not null; call add function
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
@@ -101,15 +104,14 @@
 
 	//load list of todos from database
 	$query = "SELECT * FROM todos LIMIT :numRecs OFFSET :offsetVal";
-	$stmt = $dbc->prepare($query);
-	$stmt->bindValue(':numRecs', $numRecords, PDO::PARAM_INT);
-	$stmt->bindValue(':offsetVal', $offsetValue, PDO::PARAM_INT);
-	$stmt->execute();
-	$todoItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $dbc->prepare($query);
+    $stmt->bindValue(':numRecs', $numRecords, PDO::PARAM_INT);
+    $stmt->bindValue(':offsetVal', $offsetValue, PDO::PARAM_INT);
+    $stmt->execute();
+    $todoItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 	//determine count of records returned
 	$results = $stmt->rowCount();
-
 
 	// Verify there were uploaded files and no errors
   	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
