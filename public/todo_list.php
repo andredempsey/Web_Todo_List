@@ -32,7 +32,7 @@
 	//check if a value has been POSTED and it is not null; call add function
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
-		$dbInstance->addItem($errorMsg, $_POST['item']);
+		$dbInstance->addItem($_POST['item']);
 	}
 
 	//delete item from list and database
@@ -75,7 +75,7 @@
 	$todoItems = $dbInstance->showList();
 
 	//determine count of records returned
-	$results = $dbInstance->stmt->rowCount();
+	$results = count($todoItems);
 
 	// Verify there were uploaded files and no errors
   	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
@@ -102,7 +102,7 @@
   			//append file contents to current todo list
   			foreach ($newList as $key => $value) 
   			{
-  				$dbInstance->addItem($errorMsg, $value);
+  				$dbInstance->addItem($value);
   				$countInserts++;
   			}
 			$totalPages = ceil($dbInstance->pageCount());
