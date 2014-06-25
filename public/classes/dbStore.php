@@ -2,73 +2,64 @@
 
 class DBstore {
 
+    public $dbConnection = '';
     public $filename = '';
-    private $is_csv = false;
+    public $stmt = null;
+    public $numRecords = 10;
+    public $offsetValue = 0;
 
     function __construct($filename = '') 
     {
-        // Sets $this->filename
-        $this->is_csv = (substr($filename, -3) == 'csv');
-        $this->filename = $filename;
+        //establish DB connection
+        // Get new instance of PDO object
+        $this->dbConnection = new PDO('mysql:host=127.0.0.1;dbname=' . $filename, 'andre', 'password');
+
+        // Tell PDO to throw exceptions on error
+        $this->dbConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        // echo $dbConnection->getAttribute(PDO::ATTR_CONNECTION_STATUS) . "\n";
+    
     }
 
-    public function read()
+    //adds new item to the database
+    function addItem(&$errorMsg, $userInput)
     {
-        if ($this->is_csv)
+        try 
         {
-            return $this->read_csv();
-        }
-        else
+            $this->stmt = $this->dbConnection->prepare('INSERT INTO todos (item) VALUES (:item)');
+            $this->stmt->bindValue(':item', $userInput, PDO::PARAM_STR);
+            $this->stmt->execute();
+            $errorMsg = "Inserted new item with ID: " . $this->dbConnection->lastInsertId();
+            $_POST=[];  
+        } 
+        catch (Exception $e) 
         {
-            return $this->read_lines();
+            $errorMsg=$e->getMessage();
         }
     }
-
-    /**
-     * Returns array of lines in $this->filename
-     */
-    private function read_lines()
+    //delete item from database
+    function deleteItem(&$errorMsg, $userInput)
     {
-        if (is_readable($this->filename))
-        {
-            $readHandle = fopen($this->filename, "r");
-            if (filesize($this->filename)>0) 
-            {
-                $listItems = trim(fread($readHandle, filesize($this->filename)));
-                $listItemsArray = explode(PHP_EOL, $listItems);
-                fclose($readHandle);
-            }
-            else
-            {
-                fclose($readHandle);
-                $listItemsArray=array();
-            }
-        }
-        else
-        {
-            $errorMsg = "File not readable.  Please check the file name and path and try again. ". PHP_EOL;
-        }
-            return $listItemsArray;
+        $query='DELETE FROM todos WHERE id=:id';
+        $this->stmt = $this->dbConnection->prepare($query);
+        $this->stmt->bindValue(':id', $userInput, PDO::PARAM_INT);
+        $this->stmt->execute();
+    }
+    //determine total pages for entire data set
+    public function pageCount()
+    {
+        return ($this->dbConnection->query('SELECT * FROM todos')->rowCount()/$this->numRecords);
+
     }
 
-    /**
-     * Reads contents of csv $this->filename, returns an array
-     */
-    private function read_csv()
+    //load list of todos from database
+    public function showList()
     {
-        $addressBook=[];
-        // Code to read file $this->filename
-        $handle = fopen($this->filename, 'r');
-        while(!feof($handle)) 
-        {
-            $row=fgetcsv($handle);      
-            if (is_array($row)) 
-            {
-                $addressBook[] = $row;
-            }
-        }
-        fclose($handle);
-        return $addressBook;
+        $query = "SELECT * FROM todos LIMIT :numRecs OFFSET :offsetVal";
+        $this->stmt = $this->dbConnection->prepare($query);
+        $this->stmt->bindValue(':numRecs', $this->numRecords, PDO::PARAM_INT);
+        $this->stmt->bindValue(':offsetVal', $this->offsetValue, PDO::PARAM_INT);
+        $this->stmt->execute();
+        return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
 }

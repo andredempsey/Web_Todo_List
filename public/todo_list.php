@@ -1,9 +1,8 @@
 <?
 	require_once('classes/dbStore.php');
+	require_once('classes/filestore.php');
 	//initialize/declare variables
 	$errorMsg='';
-	$numRecords = 10;
-	$offsetValue = 0;
 	$pageNumber= 1;
 	$filename = 'todo_list';
 
@@ -11,20 +10,14 @@
 
     //establish DB connection
     // Get new instance of PDO object
-    $dbc = new PDO('mysql:host=127.0.0.1;dbname=' . $filename, 'andre', 'password');
-
-    // Tell PDO to throw exceptions on error
-    $dbc->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    // echo $dbc->getAttribute(PDO::ATTR_CONNECTION_STATUS) . "\n";
-	//validate inputs to check for invalid spaces or excessive length
-
+    $dbInstance = new DBstore($filename);
+    
+    //validate inputs to check for invalid spaces or excessive length
     function inputValidation($todoItem)
     {
     	if (strlen(trim($todoItem)) == '')
     	{
-
-    		throw new InvalidInputException('To Do items cannot be null.');
-    		
+    		throw new InvalidInputException('To Do items cannot be null.');	
     	}
     	elseif (strlen($todoItem) > 239) 
     	{
@@ -35,48 +28,24 @@
     		return trim($todoItem);
     	}
     }
-  	function addItem(&$errorMessage, $dbc, $userInput)
-    {
-        try 
-        {
-            $stmt = $dbc->prepare('INSERT INTO todos (item) VALUES (:item)');
-            $stmt->bindValue(':item', $userInput, PDO::PARAM_STR);
-            $stmt->execute();
-            $errorMessage = "Inserted ID: " . $dbc->lastInsertId();
-            $_POST=[];  
-        } 
-        catch (Exception $e) 
-        {
-            $errorMessage=$e->getMessage();
-        }
-        echo "item add";
-    }
-    //delete item from database
-    function deleteItem(&$errorMessage, $dbc, $userInput)
-    {
-        $query='DELETE FROM todos WHERE id=:id';
-        $stmt = $dbc->prepare($query);
-        $stmt->bindValue(':id', $userInput, PDO::PARAM_INT);
-        $stmt->execute();
-    }
-    
+  	  
 	//check if a value has been POSTED and it is not null; call add function
 	if (isset($_POST['item']) && $_POST['item']!="")
 	{
-		addItem($errorMessage, $dbc, $_POST['item']);
+		$dbInstance->addItem($errorMsg, $_POST['item']);
 	}
 
 	//delete item from list and database
 	if (isset($_POST['removeId']) && $_POST['removeId']!="")
 	{
 		//delete respective todo item
-		deleteItem($errorMessage, $dbc, $_POST['removeId']);
+		$dbInstance->deleteItem($errorMsg, $_POST['removeId']);
 		header("Location: todo_list.php");
 		exit();
 	}
 
 	//determine total pages for entire data set
-	$totalPages = ($dbc->query('SELECT * FROM todos')->rowCount()/$numRecords);
+	$totalPages = $dbInstance->pageCount();
 
 	//if page was changed, update data set using prepare statements and SQL SELECT query
 	if (isset($_GET['Page']))
@@ -86,32 +55,27 @@
 			$pageNumber = ceil($totalPages);
 			header("Location: todo_list.php?Page=$pageNumber");
 			exit();
-			$offsetValue = $numRecords * $pageNumber - $numRecords;	
+			$dbInstance->offsetValue = $dbInstance->numRecords * $pageNumber - $dbInstance->numRecords;	
 		} 
 		elseif ($_GET['Page'] >= 1)
 		{
 			$pageNumber = $_GET['Page'];
-			$offsetValue = $numRecords * $pageNumber - $numRecords;
+			$dbInstance->offsetValue = $dbInstance->numRecords * $pageNumber - $dbInstance->numRecords;
 		} 
 		else
 		{
 			$pageNumber = 1;
 			header("Location: todo_list.php?Page=$pageNumber");
 			exit();
-			$offsetValue = $numRecords * $pageNumber - $numRecords;	
+			$dbInstance->offsetValue = $dbInstance->numRecords * $pageNumber - $dbInstance->numRecords;	
 		}
 	}
 
 	//load list of todos from database
-	$query = "SELECT * FROM todos LIMIT :numRecs OFFSET :offsetVal";
-    $stmt = $dbc->prepare($query);
-    $stmt->bindValue(':numRecs', $numRecords, PDO::PARAM_INT);
-    $stmt->bindValue(':offsetVal', $offsetValue, PDO::PARAM_INT);
-    $stmt->execute();
-    $todoItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	$todoItems = $dbInstance->showList();
 
 	//determine count of records returned
-	$results = $stmt->rowCount();
+	$results = $dbInstance->stmt->rowCount();
 
 	// Verify there were uploaded files and no errors
   	if (count($_FILES) > 0 && $_FILES['file1']['error'] == 0) 
@@ -132,16 +96,16 @@
   		else
   		{ 			
   			//retrieve uploaded file contents
-  			$uf = new DBstore($savedFilename);
+  			$uf = new Filestore($savedFilename);
   			$newList=$uf->read();
 
   			//append file contents to current todo list
   			foreach ($newList as $key => $value) 
   			{
-  				addItem($errorMessage, $dbc, $value);
+  				$dbInstance->addItem($errorMsg, $value);
   				$countInserts++;
   			}
-			$totalPages = ceil($dbc->query('SELECT * FROM todos')->rowCount()/$numRecords);
+			$totalPages = ceil($dbInstance->pageCount());
   			header("Location: todo_list.php?Page={$totalPages}");
 			exit();
   		}
@@ -190,6 +154,7 @@
 		<hr>
 
 		<div class="container">		
+		<p style="text-align: center"><?= (is_null($errorMsg))?"":$errorMsg; ?></p>
 			<? if ($results!=0): ?>
 				<table class = "table table-striped">
 					<?foreach ($todoItems as $key =>$todo) :?>
@@ -203,8 +168,7 @@
 		</div>
 
 		<p style="text-align: center">Page <?=$pageNumber?> of <?=ceil($totalPages)?> pages.</p>
-		<p style="text-align: center">You are viewing <?=$results?> of <?=$totalPages*$numRecords?> total results.</p>
-		<?= (is_null($errorMsg))?"":$errorMsg; ?>
+		<p style="text-align: center">You are viewing <?=$results?> of <?=$totalPages*$dbInstance->numRecords?> total results.</p>
 
 		<form method="GET" action="/todo_list.php">
 			<div style ="text-align: center"><ul class="pagination">
